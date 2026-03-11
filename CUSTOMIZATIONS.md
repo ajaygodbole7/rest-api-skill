@@ -8,8 +8,20 @@
 ## How to Use
 
 1. Copy this file to your organization's repo or fork
-2. Document your overrides in the sections below
+2. Document your overrides in the table and sections below
 3. Reference this file from your SKILL.md or CLAUDE.md instructions
+
+## Rule Overrides
+
+Record your organization's overrides here.
+
+| Rule | Default | Your Override | Rationale |
+|------|---------|---------------|-----------|
+| [#118] | MUST use snake_case properties | camelCase | Consistency with existing API surface |
+| [#115] | MUST NOT use URL versioning | Allow /v1/ prefix | API gateway requires path versioning |
+| [#160] | SHOULD prefer cursor-based pagination | Allow offset-based | Internal tooling needs random page access |
+| [#240] | SHOULD use UPPER_SNAKE_CASE enums | Allow lowercase | Existing enum convention |
+| | | | |
 
 ## Sample Customization Patterns
 
