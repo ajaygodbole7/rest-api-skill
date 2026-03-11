@@ -22,9 +22,40 @@ Override Zalando defaults where your organization has different standards.
 | [#240] | SHOULD use UPPER_SNAKE_CASE enums | _e.g., Allow lowercase_ | _e.g., Existing enum convention_ |
 | _add rows_ | | | |
 
-## Common Overrides
+## Sample Customization Patterns
 
-**Property naming convention [#118]:** Zalando mandates `snake_case` for JSON properties, but the industry is split — Stripe, Google, and GitHub use `camelCase`; Zalando, Slack, and Square use `snake_case`. The actual best practice is consistency within your API surface. If your org uses `camelCase`, override [#118] in the table above and update the `properties-snake-case` rule in `validation/.spectral.yaml` to match `^[a-z][a-zA-Z0-9]*$` instead.
+- **Property naming [#118]** — Zalando mandates `snake_case`. If your org uses `camelCase`, override here and keep it consistent across your API surface.
+  - Override [#118] in the Rule Overrides table
+  - Change Spectral regex in `validation/.spectral.yaml` from `^[a-z][a-z0-9]*(_[a-z0-9]+)*$` to `^[a-z][a-zA-Z0-9]*$`
+
+- **Prefixed IDs [#174]** — Type prefixes on identifiers (`ord_abc123`, `cus_xyz789`).
+  - Define a prefix-to-resource mapping in `common-objects.yaml`
+  - Update golden example to use prefixed IDs throughout
+
+- **Error taxonomy [#176]** — Extend the Problem schema beyond RFC 9457.
+  - Add fields to `common-objects.yaml`: `error_type` (e.g., `"validation_error"`), `error_code` (e.g., `"missing_field"`), `doc_url` (link to docs)
+  - Update golden example error responses to include them
+
+- **Expansion [#158]** — Inline related resources via query parameter.
+  - Add `?expand[]=relationship_name` to GET endpoints
+  - Mark expandable fields with `x-expandable: true` in schemas
+  - Add examples to golden example
+
+- **Metadata [#174]** — Freeform key-value object on every resource.
+  - Add metadata schema to `common-objects.yaml`: `type: object`, `additionalProperties: string`, max 50 keys
+  - Include on all resources in golden example
+
+- **Idempotency [#229/#231]** — Define the full retry contract.
+  - POST requests accept `Idempotency-Key` header (UUID)
+  - Same key + same body = cached response (no re-execute)
+  - Same key + different body = 422
+  - Keys expire after 24 hours
+  - Add to golden example POST endpoints
+
+- **URL versioning [#115]** — Path versioning instead of media-type.
+  - Override [#115] in the Rule Overrides table
+  - Add `/v1` prefix to all paths in golden example
+  - Remove `no-url-versioning` rule from `validation/.spectral.yaml`
 
 ## Additional Constraints
 
