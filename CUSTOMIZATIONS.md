@@ -22,6 +22,10 @@ Override Zalando defaults where your organization has different standards.
 | [#240] | SHOULD use UPPER_SNAKE_CASE enums | _e.g., Allow lowercase_ | _e.g., Existing enum convention_ |
 | _add rows_ | | | |
 
+## Common Overrides
+
+**Property naming convention [#118]:** Zalando mandates `snake_case` for JSON properties, but the industry is split — Stripe, Google, and GitHub use `camelCase`; Zalando, Slack, and Square use `snake_case`. The actual best practice is consistency within your API surface. If your org uses `camelCase`, override [#118] in the table above and update the `properties-snake-case` rule in `validation/.spectral.yaml` to match `^[a-z][a-zA-Z0-9]*$` instead.
+
 ## Additional Constraints
 
 Add organization-specific rules not covered by the Zalando guidelines.
