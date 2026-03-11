@@ -1,0 +1,811 @@
+# Golden Example: E-Commerce Order Management API
+# Derived from Zalando RESTful API Guidelines (CC-BY-4.0, Zalando SE)
+# https://opensource.zalando.com/restful-api-guidelines/
+#
+# This specification demonstrates compliance with ~60 Zalando rules.
+# Rule citations appear as [#NNN] comments throughout.
+
+# [#101] MUST provide API specifications using OpenAPI
+openapi: '3.1.0'
+
+# [#218] MUST contain API meta information
+# [#116] MUST use semantic versioning
+# [#215] MUST provide API identifiers
+# [#219] MUST provide API audience
+# [#103] MUST write APIs using U.S. English
+info:
+  title: Order Management API
+  description: |
+    RESTful API for managing e-commerce orders, order items, and fulfillment.
+    Supports full order lifecycle from placement through delivery.
+
+    ## Overview
+    - Create, retrieve, update, and cancel orders
+    - Cursor-based pagination for order collections
+    - OAuth2 authorization with granular scopes
+
+    ## Error Handling
+    All errors follow RFC 9457 Problem Details format (application/problem+json).
+  version: 1.0.0
+  contact:
+    name: Order Platform Team
+    url: https://example.com/teams/order-platform
+    email: order-platform@example.com
+  x-api-id: d0184f38-b98d-11e7-9c56-68f728c1ba70
+  x-audience: external-public
+
+# [#104] MUST secure endpoints with OAuth2
+# [#105] MUST define and assign permissions (scopes)
+# [#225] MUST check and validate permissions
+security:
+  - oauth2:
+      - orders.read
+
+servers:
+  # [#135] MUST NOT use /api as base path
+  - url: https://api.example.com
+    description: Production
+
+tags:
+  - name: Order Items
+    description: Line items within an order
+  - name: Orders
+    description: Order lifecycle management
+
+paths:
+  # [#129] MUST use lowercase with hyphens for path segments
+  # [#134] MUST pluralize resource names
+  # [#136] MUST stick to normalized paths (no trailing slash)
+  # [#141] MUST NOT use verbs in path segments
+  # [#135] MUST NOT use /api as base path
+
+  /orders:
+    # ----------------------------------------------------------------
+    # GET /orders — list orders with cursor pagination
+    # ----------------------------------------------------------------
+    get:
+      summary: List orders
+      description: |
+        Retrieves a paginated list of orders. Results are ordered by creation
+        time descending (newest first). Uses cursor-based pagination.
+      operationId: getOrders
+      tags:
+        - Orders
+      security:
+        - oauth2:
+            - orders.read
+      # [#130] MUST use snake_case for query parameters
+      # [#159] MUST support pagination for collection endpoints
+      # [#160] MUST use cursor-based pagination
+      parameters:
+        - name: cursor
+          in: query
+          description: >
+            Opaque pagination cursor returned from a previous response.
+            Omit for the first page.
+          schema:
+            type: string
+            example: eyJpZCI6ICIxMjM0NTYifQ==
+        - name: limit
+          in: query
+          description: Maximum number of items to return per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+        # [#137] MUST use query parameters for filtering
+        - name: order_status
+          in: query
+          description: Filter by order status.
+          schema:
+            # [#240] MUST use UPPER_SNAKE_CASE for enum values
+            type: string
+            x-extensible-enum:  # [#112] SHOULD use x-extensible-enum for forward compatibility
+              - PLACED
+              - CONFIRMED
+              - SHIPPED
+              - DELIVERED
+              - CANCELLED
+        - name: created_after
+          in: query
+          description: Filter orders created after this timestamp (inclusive).
+          schema:
+            type: string
+            format: date-time
+            example: '2025-01-15T00:00:00Z'
+      responses:
+        # [#151] MUST specify success and error responses
+        # [#150] MUST use standard HTTP status codes
+        '200':
+          description: Successful retrieval of orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderList'
+        '400':
+          description: Bad request — invalid query parameters.
+          content:
+            # [#176] MUST use problem+json for error responses
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized — missing or invalid OAuth2 token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden — insufficient scopes.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+    # ----------------------------------------------------------------
+    # POST /orders — create a new order
+    # ----------------------------------------------------------------
+    post:
+      summary: Create an order
+      description: Creates a new order and returns the created resource.
+      operationId: createOrder
+      tags:
+        - Orders
+      security:
+        - oauth2:
+            - orders.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+      responses:
+        # [#180] MUST use 201 with Location header for resource creation
+        '201':
+          description: Order successfully created.
+          headers:
+            Location:
+              description: URI of the newly created order.
+              schema:
+                type: string
+                format: uri
+                example: https://api.example.com/orders/ord_7e2b4a91
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request — validation error in request body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        # [#243] MUST use 409 for conflict scenarios
+        '409':
+          description: Conflict — duplicate order detected (idempotency key collision).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  # [#228] MUST use URL-friendly resource identifiers
+  /orders/{order_id}:
+    parameters:
+      - name: order_id
+        in: path
+        required: true
+        description: Unique identifier of the order.
+        schema:
+          type: string
+          pattern: '^ord_[a-z0-9]{8,}$'
+          example: ord_7e2b4a91
+
+    # ----------------------------------------------------------------
+    # GET /orders/{order_id} — retrieve a single order
+    # ----------------------------------------------------------------
+    get:
+      summary: Get an order
+      description: Retrieves the full details of a single order by its identifier.
+      operationId: getOrder
+      tags:
+        - Orders
+      security:
+        - oauth2:
+            - orders.read
+      responses:
+        '200':
+          description: Successful retrieval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        # [#220] MUST use 404 when resource not found
+        '404':
+          description: Order not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+    # ----------------------------------------------------------------
+    # PATCH /orders/{order_id} — partial update
+    # ----------------------------------------------------------------
+    patch:
+      summary: Update an order
+      description: |
+        Partially updates an order. Only provided fields are modified.
+        Supports updating shipping address and order status.
+      operationId: updateOrder
+      tags:
+        - Orders
+      security:
+        - oauth2:
+            - orders.write
+      requestBody:
+        required: true
+        content:
+          # [#110] MUST use JSON as payload data interchange format
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderUpdate'
+      responses:
+        '200':
+          description: Order successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request — validation error.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Order not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+    # ----------------------------------------------------------------
+    # DELETE /orders/{order_id} — cancel/delete an order
+    # ----------------------------------------------------------------
+    delete:
+      summary: Delete an order
+      description: |
+        Deletes (cancels) an order. Only orders in PLACED status can be
+        deleted. Orders in other statuses must be cancelled via PATCH.
+      operationId: deleteOrder
+      tags:
+        - Orders
+      security:
+        - oauth2:
+            - orders.write
+      responses:
+        # [#150] 204 No Content for successful deletion
+        '204':
+          description: Order successfully deleted.
+        '401':
+          description: Unauthorized.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Order not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  # [#143] MUST use sub-resources for relations
+  # [#147] SHOULD limit number of sub-resource levels to 3
+  /orders/{order_id}/items:
+    parameters:
+      - name: order_id
+        in: path
+        required: true
+        description: Unique identifier of the order.
+        schema:
+          type: string
+          pattern: '^ord_[a-z0-9]{8,}$'
+          example: ord_7e2b4a91
+
+    # ----------------------------------------------------------------
+    # GET /orders/{order_id}/items — list items in an order
+    # ----------------------------------------------------------------
+    get:
+      summary: List order items
+      description: Retrieves all line items for a given order.
+      operationId: getOrderItems
+      tags:
+        - Order Items
+      security:
+        - oauth2:
+            - orders.read
+      responses:
+        '200':
+          description: Successful retrieval of order items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItemList'
+        '401':
+          description: Unauthorized.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Order not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  # [#104] OAuth2 security scheme definition
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth2/token
+          scopes:
+            orders.read: Read access to orders
+            orders.write: Write access to orders (create, update, delete)
+
+  schemas:
+    # ==============================================================
+    # Order — primary resource
+    # ==============================================================
+    # [#118] MUST use snake_case for property names
+    # [#174] MUST use common field names (id, created_at, modified_at)
+    # [#235] SHOULD name date/time properties with _at suffix
+    Order:
+      type: object
+      description: Represents a customer order with line items and shipping details.
+      required:
+        - id
+        - order_status
+        - total_amount
+        - shipping_address
+        - items
+        - created_at
+        - modified_at
+      properties:
+        # [#174] MUST use id as standard identifier field
+        # [#169] MUST use format int64 for long identifiers
+        id:
+          type: string
+          description: Unique, URL-friendly order identifier.
+          example: ord_7e2b4a91
+          readOnly: true
+        # [#240] MUST use UPPER_SNAKE_CASE for enum values
+        # [#112] SHOULD use x-extensible-enum for open-for-extension values
+        order_status:
+          type: string
+          description: Current status of the order.
+          x-extensible-enum:
+            - PLACED
+            - CONFIRMED
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+          example: PLACED
+        # [#173] MUST use the Money schema for monetary amounts
+        total_amount:
+          $ref: '#/components/schemas/Money'
+        # [#249] Address fields
+        shipping_address:
+          $ref: '#/components/schemas/Address'
+        # [#120] MUST pluralize array property names
+        # [#124] MUST NOT use null for empty arrays
+        items:
+          type: array
+          description: Line items in this order.
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          minItems: 1
+        customer_note:
+          type: string
+          description: Optional note from the customer.
+          maxLength: 1000
+        # [#122] MUST NOT use null for boolean properties
+        is_gift:
+          type: boolean
+          description: Whether this order is a gift. Defaults to false.
+          default: false
+        # [#235] SHOULD name date/time properties with _at suffix
+        # [#170] MUST use format date-time for timestamps
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the order was created.
+          readOnly: true
+          example: '2025-06-15T14:30:00.000Z'
+        modified_at:
+          type: string
+          format: date-time
+          description: Timestamp when the order was last modified.
+          readOnly: true
+          example: '2025-06-15T14:30:00.000Z'
+        shipped_at:
+          type: string
+          format: date-time
+          description: Timestamp when the order was shipped. Null if not yet shipped.
+          example: '2025-06-17T09:15:00.000Z'
+        # [#162] SHOULD provide self links for discoverability
+        # [#217] REST maturity level 2
+        self:
+          type: string
+          format: uri
+          description: Absolute URI of this order resource.
+          readOnly: true
+          example: https://api.example.com/orders/ord_7e2b4a91
+      # [#111] MUST not explicitly set additionalProperties to false (open for extension)
+
+    # ==============================================================
+    # OrderCreate — request body for POST /orders
+    # ==============================================================
+    OrderCreate:
+      type: object
+      description: Payload to create a new order.
+      required:
+        - shipping_address
+        - items
+      properties:
+        shipping_address:
+          $ref: '#/components/schemas/Address'
+        items:
+          type: array
+          description: Line items to include in the order.
+          items:
+            $ref: '#/components/schemas/OrderItemCreate'
+          minItems: 1
+        customer_note:
+          type: string
+          description: Optional note from the customer.
+          maxLength: 1000
+        is_gift:
+          type: boolean
+          description: Whether this order is a gift.
+          default: false
+
+    # ==============================================================
+    # OrderUpdate — request body for PATCH /orders/{order_id}
+    # ==============================================================
+    OrderUpdate:
+      type: object
+      description: Payload for partial order update. Only provided fields are modified.
+      properties:
+        order_status:
+          type: string
+          description: New status for the order.
+          x-extensible-enum:
+            - CONFIRMED
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+        shipping_address:
+          $ref: '#/components/schemas/Address'
+        customer_note:
+          type: string
+          description: Updated customer note.
+          maxLength: 1000
+
+    # ==============================================================
+    # OrderItem — line item within an order
+    # ==============================================================
+    OrderItem:
+      type: object
+      description: A single line item in an order.
+      required:
+        - id
+        - product_id
+        - product_name
+        - quantity
+        - unit_price
+      properties:
+        id:
+          type: string
+          description: Unique item identifier.
+          example: itm_a3f8c012
+          readOnly: true
+        product_id:
+          type: string
+          description: Identifier of the product.
+          example: prd_d91e4b7f
+        product_name:
+          type: string
+          description: Display name of the product.
+          example: Wireless Bluetooth Headphones
+        # [#238] MUST use format int32 for small integers
+        quantity:
+          type: integer
+          format: int32
+          description: Number of units ordered.
+          minimum: 1
+          example: 2
+        unit_price:
+          $ref: '#/components/schemas/Money'
+
+    # ==============================================================
+    # OrderItemCreate — line item in create request
+    # ==============================================================
+    OrderItemCreate:
+      type: object
+      description: Line item data for order creation.
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: string
+          description: Identifier of the product to order.
+          example: prd_d91e4b7f
+        quantity:
+          type: integer
+          format: int32
+          description: Number of units to order.
+          minimum: 1
+          example: 2
+
+    # ==============================================================
+    # OrderList — paginated collection wrapper
+    # ==============================================================
+    # [#110] MUST always return JSON objects as top-level structure
+    # [#159] MUST support pagination
+    # [#160] MUST use cursor-based pagination
+    OrderList:
+      type: object
+      description: Paginated list of orders.
+      required:
+        - items
+        - cursors
+      properties:
+        # [#120] Pluralized array name
+        items:
+          type: array
+          description: List of orders on this page.
+          items:
+            $ref: '#/components/schemas/Order'
+        # [#248] Cursor-based pagination metadata
+        cursors:
+          $ref: '#/components/schemas/Cursors'
+        # [#161] MUST provide pagination links
+        # [#164] Absolute URIs in links
+        self:
+          type: string
+          format: uri
+          description: URI of the current page.
+          example: https://api.example.com/orders?cursor=eyJpZCI6ICIxMjM0NTYifQ==&limit=20
+        next:
+          type: string
+          format: uri
+          description: URI of the next page. Absent if this is the last page.
+          example: https://api.example.com/orders?cursor=eyJpZCI6ICI3ODkwMTIifQ==&limit=20
+        prev:
+          type: string
+          format: uri
+          description: URI of the previous page. Absent if this is the first page.
+
+    # ==============================================================
+    # OrderItemList — sub-resource collection
+    # ==============================================================
+    OrderItemList:
+      type: object
+      description: List of order items (non-paginated for sub-resource).
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Line items in this order.
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        self:
+          type: string
+          format: uri
+          description: URI of this order items collection.
+          example: https://api.example.com/orders/ord_7e2b4a91/items
+
+    # ==============================================================
+    # Cursors — pagination cursor metadata
+    # ==============================================================
+    # [#254] Cursor pagination details
+    Cursors:
+      type: object
+      description: Opaque cursors for navigating paginated results.
+      properties:
+        before:
+          type: string
+          description: Cursor pointing to the start of the current page.
+          example: eyJpZCI6ICIxMjM0NTYifQ==
+        after:
+          type: string
+          description: Cursor pointing to the end of the current page.
+          example: eyJpZCI6ICI3ODkwMTIifQ==
+        has_next:
+          type: boolean
+          description: Whether more results exist after the current page.
+          example: true
+        has_prev:
+          type: boolean
+          description: Whether results exist before the current page.
+          example: false
+
+    # ==============================================================
+    # Money — monetary amount [#173]
+    # ==============================================================
+    # [#173] MUST use Money as standard type for monetary amounts
+    # [#171] MUST use standard data formats
+    Money:
+      type: object
+      description: >
+        Monetary amount with currency. Amount uses decimal format for
+        precise representation without floating-point rounding.
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: decimal
+          description: The monetary amount.
+          example: 99.95
+        currency:
+          type: string
+          description: ISO 4217 currency code.
+          pattern: '^[A-Z]{3}$'
+          example: EUR
+
+    # ==============================================================
+    # Address — postal address [#249]
+    # ==============================================================
+    # [#249] MUST use Address fields following common conventions
+    Address:
+      type: object
+      description: Postal address for shipping or billing.
+      required:
+        - first_name
+        - last_name
+        - street_address
+        - city
+        - postal_code
+        - country_code
+      properties:
+        first_name:
+          type: string
+          description: Recipient first name.
+          example: Jane
+        last_name:
+          type: string
+          description: Recipient last name.
+          example: Doe
+        street_address:
+          type: string
+          description: Street name and house number.
+          example: 123 Main Street
+        additional_address:
+          type: string
+          description: Apartment, suite, floor, etc.
+          example: Apt 4B
+        city:
+          type: string
+          description: City or locality name.
+          example: Berlin
+        state:
+          type: string
+          description: State, province, or region.
+          example: Berlin
+        postal_code:
+          type: string
+          description: ZIP or postal code.
+          example: '10115'
+        country_code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+          pattern: '^[A-Z]{2}$'
+          example: DE
+
+    # ==============================================================
+    # Problem — RFC 9457 Problem Details [#176]
+    # ==============================================================
+    # [#176] MUST use problem+json for error responses (RFC 9457)
+    Problem:
+      type: object
+      description: >
+        Error response following RFC 9457 Problem Details for HTTP APIs.
+        Used as the body for all error responses with content type
+        application/problem+json.
+      required:
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          description: >
+            A URI reference that identifies the problem type. When
+            dereferenced, it should provide human-readable documentation.
+          default: about:blank
+          example: https://api.example.com/problems/order-not-found
+        title:
+          type: string
+          description: >
+            A short, human-readable summary of the problem type. Does
+            not change from occurrence to occurrence.
+          example: Order Not Found
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code for this problem occurrence.
+          minimum: 100
+          maximum: 599
+          example: 404
+        detail:
+          type: string
+          description: >
+            A human-readable explanation specific to this occurrence
+            of the problem.
+          example: No order found with identifier 'ord_7e2b4a91'.
+        instance:
+          type: string
+          format: uri
+          description: >
+            A URI reference that identifies the specific occurrence of
+            the problem.
+          example: https://api.example.com/problems/instances/a1b2c3d4

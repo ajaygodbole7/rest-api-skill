@@ -1,0 +1,103 @@
+# Common Reusable Schema Objects
+# Derived from Zalando RESTful API Guidelines
+# Source: https://github.com/zalando/restful-api-guidelines
+# Copyright Zalando SE, licensed under CC-BY-4.0
+# This is a derivative work — see LICENSE for details.
+
+openapi: '3.1.0'
+info:
+  title: Zalando Common Schema Objects
+  version: 1.0.0
+  description: >-
+    Reusable schema components derived from the Zalando RESTful API Guidelines
+    (CC-BY-4.0, Zalando SE). These objects standardize common data structures
+    across APIs.
+  contact:
+    name: Zalando RESTful API Guidelines
+    url: https://opensource.zalando.com/restful-api-guidelines/
+  license:
+    name: CC-BY-4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+
+paths: {}
+
+components:
+  schemas:
+
+    # [#173] — Must use standard money format
+    # Source: Zalando models/money-1.0.0.yaml
+    Money:
+      type: object
+      description: >-
+        Standard money object representing a monetary amount with currency.
+        Follows Zalando rule [#173] for standard money representation.
+      properties:
+        amount:
+          type: number
+          description: Amount in major and minor currency units
+          format: decimal
+          example: 99.95
+        currency:
+          type: string
+          description: 3-letter currency code (ISO 4217)
+          format: iso-4217
+          example: EUR
+      required:
+        - amount
+        - currency
+
+    # [#176] — Must use Problem JSON (RFC 9457)
+    # Source: Zalando models/problem-1.0.1.yaml
+    Problem:
+      type: object
+      description: >-
+        Standard error response object following RFC 9457 (Problem Details for
+        HTTP APIs). Follows Zalando rule [#176] for consistent error reporting.
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: URI reference identifying the problem type
+          default: 'about:blank'
+        title:
+          type: string
+          description: Short summary of the problem type
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code
+          minimum: 100
+          maximum: 600
+          exclusiveMaximum: true
+        detail:
+          type: string
+          description: Human-readable explanation of the problem
+        instance:
+          type: string
+          format: uri-reference
+          description: URI reference identifying the specific occurrence
+
+    # [#249] — Standard address format
+    Address:
+      type: object
+      description: >-
+        Standardized address object with ISO country codes.
+        Follows Zalando rule [#249] for common address representation.
+      properties:
+        street_address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postal_code:
+          type: string
+        country_code:
+          type: string
+          format: iso-3166-1-alpha-2
+          description: 2-letter country code (ISO 3166-1 alpha-2)
+      required:
+        - street_address
+        - city
+        - postal_code
+        - country_code

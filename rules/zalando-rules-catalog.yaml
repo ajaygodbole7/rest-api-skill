@@ -1,0 +1,1287 @@
+# Zalando RESTful API Guidelines — Rules Catalog
+# Source: https://opensource.zalando.com/restful-api-guidelines/
+# License: CC-BY-4.0 — Copyright Zalando SE
+# This is a derivative work. See LICENSE for full terms.
+#
+# Total rules: 143 (138 applicable + 5 Zalando-internal exclusions)
+# RFC 2119 keyword distribution: MUST: 84, SHOULD: 49, MAY: 10
+
+chapters:
+
+  # ============================================================
+  # Chapter 4: General Guidelines
+  # ============================================================
+  - chapter: General Guidelines
+    chapter_number: 4
+    rules:
+      - id: 100
+        title: Follow API first principle
+        keyword: MUST
+        summary: >
+          API specifications must be the primary design artifact, defined
+          before implementation begins, enabling parallel workstreams.
+        applies_to: [process]
+
+      - id: 101
+        title: Provide API specifications using OpenAPI
+        keyword: MUST
+        summary: >
+          All service APIs must be defined using OpenAPI 3.x specification
+          as the single source of truth.
+        applies_to: [specification]
+
+      - id: 102
+        title: Provide API user manual
+        keyword: SHOULD
+        summary: >
+          In addition to the API specification, a user manual should be
+          provided for complex APIs to improve developer experience.
+        applies_to: [documentation]
+
+      - id: 103
+        title: Write APIs using U.S. English
+        keyword: MUST
+        summary: >
+          All API artifacts — names, descriptions, examples — must use
+          U.S. English spelling and grammar.
+        applies_to: [naming]
+
+      - id: 234
+        title: Only use durable and immutable remote references
+        keyword: MUST
+        summary: >
+          Remote $ref references must point to immutable, versioned
+          resources to prevent breaking changes from external updates.
+        applies_to: [specification]
+
+  # ============================================================
+  # Chapter 5: REST Basics — Meta Information
+  # ============================================================
+  - chapter: REST Basics — Meta Information
+    chapter_number: 5
+    rules:
+      - id: 218
+        title: Contain API meta information
+        keyword: MUST
+        summary: >
+          OpenAPI info object must include title, description, version,
+          and contact information.
+        applies_to: [specification]
+
+      - id: 116
+        title: Use semantic versioning
+        keyword: MUST
+        summary: >
+          API versions must follow semantic versioning (MAJOR.MINOR.PATCH)
+          in the info.version field.
+        applies_to: [versioning]
+
+      - id: 215
+        title: Provide API identifiers
+        keyword: MUST
+        summary: >
+          Each API must have a unique identifier (x-api-id) in the
+          specification's info extension.
+        applies_to: [specification]
+
+      - id: 219
+        title: Provide API audience
+        keyword: MUST
+        summary: >
+          APIs must declare their audience scope via x-audience extension
+          (component-internal, business-unit-internal, company-internal,
+          external-partner, external-public).
+        applies_to: [specification]
+
+      - id: 223
+        title: Use functional naming schema
+        keyword: MUST
+        summary: >
+          Functional API names must follow Zalando's naming schema for
+          API discovery and governance.
+        applies_to: [naming]
+        zalando_internal: true
+        exclusion_rationale: >
+          References Zalando-specific functional naming registry and
+          internal API portal conventions not applicable outside Zalando.
+
+      - id: 224
+        title: Follow naming convention for hostnames
+        keyword: MUST
+        summary: >
+          API hostnames must follow the Zalando naming convention pattern.
+        applies_to: [naming]
+        zalando_internal: true
+        exclusion_rationale: >
+          References Zalando-specific hostname DNS patterns and internal
+          infrastructure conventions.
+
+  # ============================================================
+  # Chapter 6: REST Basics — Security
+  # ============================================================
+  - chapter: REST Basics — Security
+    chapter_number: 6
+    rules:
+      - id: 104
+        title: Secure endpoints
+        keyword: MUST
+        summary: >
+          Every API endpoint must be secured using appropriate
+          authentication and authorization mechanisms (OAuth 2.0, OpenID
+          Connect, or API keys).
+        applies_to: [security]
+
+      - id: 105
+        title: Define and assign permissions (scopes)
+        keyword: MUST
+        summary: >
+          API endpoints must define fine-grained OAuth 2.0 scopes that
+          map to business capabilities and are assigned per endpoint.
+        applies_to: [security]
+
+      - id: 225
+        title: Follow naming convention for permissions (scopes)
+        keyword: MUST
+        summary: >
+          OAuth scopes must follow a hierarchical naming convention
+          using the pattern <api-id>.<resource>.<access-mode>.
+        applies_to: [security, naming]
+
+  # ============================================================
+  # Chapter 7: REST Basics — Data Formats
+  # ============================================================
+  - chapter: REST Basics — Data Formats
+    chapter_number: 7
+    rules:
+      - id: 238
+        title: Use standard data formats
+        keyword: MUST
+        summary: >
+          Properties must use OpenAPI-defined formats (e.g., date, date-time,
+          uri, email, uuid) for standard data types.
+        applies_to: [data-formats]
+
+      - id: 171
+        title: Define format for number and integer types
+        keyword: MUST
+        summary: >
+          Numeric properties must specify format (int32, int64, float,
+          double, decimal) to ensure interoperability.
+        applies_to: [data-formats]
+
+      - id: 169
+        title: Use standard formats for date and time properties
+        keyword: MUST
+        summary: >
+          Date/time properties must use ISO 8601 / RFC 3339 formats
+          with explicit timezone (date-time) or date-only (date).
+        applies_to: [data-formats]
+
+      - id: 255
+        title: Select appropriate date or date-time format
+        keyword: SHOULD
+        summary: >
+          Choose between date and date-time based on whether time
+          precision is needed. Use date for calendar dates, date-time
+          for timestamps.
+        applies_to: [data-formats]
+
+      - id: 127
+        title: Use standard formats for time duration and interval properties
+        keyword: SHOULD
+        summary: >
+          Duration and interval properties should use ISO 8601 formats
+          (e.g., P1DT12H for durations, start/end for intervals).
+        applies_to: [data-formats]
+
+      - id: 170
+        title: Use standard formats for country, language and currency properties
+        keyword: MUST
+        summary: >
+          Use ISO 3166-1 alpha-2 for countries, BCP 47 / ISO 639-1 for
+          languages, and ISO 4217 for currencies.
+        applies_to: [data-formats]
+
+      - id: 244
+        title: Use content negotiation if clients may choose different representations
+        keyword: SHOULD
+        summary: >
+          When multiple representations exist, use Accept/Content-Type
+          headers for content negotiation rather than query parameters.
+        applies_to: [data-formats, http-headers]
+
+      - id: 144
+        title: Only use UUIDs if necessary
+        keyword: SHOULD
+        summary: >
+          Prefer shorter, URL-friendly identifiers over UUIDs. Use UUIDs
+          only when global uniqueness without coordination is required.
+        applies_to: [data-formats]
+
+  # ============================================================
+  # Chapter 8: REST Basics — URLs
+  # ============================================================
+  - chapter: REST Basics — URLs
+    chapter_number: 8
+    rules:
+      - id: 135
+        title: Not use /api as base path
+        keyword: SHOULD
+        summary: >
+          API base paths should not include /api prefix; use the host
+          and path to distinguish API endpoints.
+        applies_to: [urls]
+
+      - id: 134
+        title: Pluralize resource names
+        keyword: MUST
+        summary: >
+          Collection resource names must be pluralized nouns
+          (e.g., /orders not /order).
+        applies_to: [urls, naming]
+
+      - id: 228
+        title: Use URL-friendly resource identifiers
+        keyword: MUST
+        summary: >
+          Resource identifiers in URLs must be URL-safe — use ASCII
+          characters without encoding requirements.
+        applies_to: [urls]
+
+      - id: 129
+        title: Use kebab-case for path segments
+        keyword: MUST
+        summary: >
+          Multi-word path segments must use kebab-case
+          (e.g., /sales-orders not /salesOrders).
+        applies_to: [urls, naming]
+
+      - id: 136
+        title: Use normalized paths without empty segments and trailing slashes
+        keyword: MUST
+        summary: >
+          Paths must not contain empty segments (//) or trailing slashes;
+          normalize to single canonical form.
+        applies_to: [urls]
+
+      - id: 141
+        title: Keep URLs verb-free
+        keyword: MUST
+        summary: >
+          URLs must identify resources (nouns), not actions (verbs).
+          Use HTTP methods to express operations.
+        applies_to: [urls]
+
+      - id: 138
+        title: Avoid actions — think about resources
+        keyword: MUST
+        summary: >
+          Model business capabilities as resources, not RPC-style actions.
+          Prefer resource state changes over action endpoints.
+        applies_to: [urls, design]
+
+      - id: 140
+        title: Define useful resources
+        keyword: SHOULD
+        summary: >
+          Resources should map to business objects with clear identity
+          and lifecycle, not arbitrary technical groupings.
+        applies_to: [urls, design]
+
+      - id: 142
+        title: Use domain-specific resource names
+        keyword: MUST
+        summary: >
+          Resource names must reflect the domain language (ubiquitous
+          language from DDD), not implementation details.
+        applies_to: [urls, naming]
+
+      - id: 139
+        title: Model complete business processes
+        keyword: SHOULD
+        summary: >
+          APIs should model complete business processes with proper
+          resource relationships, not just CRUD operations.
+        applies_to: [design]
+
+      - id: 143
+        title: Identify resources and sub-resources via path segments
+        keyword: MUST
+        summary: >
+          Use path hierarchy to express resource containment:
+          /{collection}/{id}/{sub-collection}/{sub-id}.
+        applies_to: [urls]
+
+      - id: 241
+        title: Expose compound keys as resource identifiers
+        keyword: MAY
+        summary: >
+          Compound business keys may be exposed as single path parameters
+          using a defined separator (e.g., country_code_product_id).
+        applies_to: [urls]
+
+      - id: 145
+        title: Consider using (non-) nested URLs
+        keyword: MAY
+        summary: >
+          Choose between nested (/orders/{id}/items) and flat
+          (/order-items?order_id={id}) URLs based on ownership semantics.
+        applies_to: [urls]
+
+      - id: 146
+        title: Limit number of resource types
+        keyword: SHOULD
+        summary: >
+          APIs should limit the total number of resource types to
+          maintain comprehensibility (aim for < 8 per API).
+        applies_to: [urls, design]
+
+      - id: 147
+        title: Limit number of sub-resource levels
+        keyword: SHOULD
+        summary: >
+          URL nesting should not exceed 3 levels of sub-resources
+          (e.g., /a/{id}/b/{id}/c/{id} is the practical limit).
+        applies_to: [urls]
+
+      - id: 130
+        title: Use snake_case (never camelCase) for query parameters
+        keyword: MUST
+        summary: >
+          Query parameter names must use snake_case
+          (e.g., ?order_status=open not ?orderStatus=open).
+        applies_to: [urls, naming]
+
+      - id: 137
+        title: Stick to conventional query parameters
+        keyword: MUST
+        summary: >
+          Use established query parameter names: q (search), sort,
+          cursor, limit, offset, fields, embed, expand.
+        applies_to: [urls]
+
+  # ============================================================
+  # Chapter 9: REST Basics — JSON Payload
+  # ============================================================
+  - chapter: REST Basics — JSON Payload
+    chapter_number: 9
+    rules:
+      - id: 167
+        title: Use JSON as payload data interchange format
+        keyword: MUST
+        summary: >
+          Request and response payloads must use JSON (application/json)
+          as the default data interchange format.
+        applies_to: [json, data-formats]
+
+      - id: 252
+        title: Design single resource schema for reading and writing
+        keyword: SHOULD
+        summary: >
+          Use a single schema per resource for both read and write
+          operations, using readOnly/writeOnly markers for asymmetry.
+        applies_to: [json, design]
+
+      - id: 250
+        title: Be aware of services not fully supporting JSON/unicode
+        keyword: SHOULD
+        summary: >
+          Consider downstream services that may not handle full Unicode;
+          document encoding requirements when relevant.
+        applies_to: [json]
+
+      - id: 168
+        title: Pass non-JSON media types using data specific standard formats
+        keyword: MAY
+        summary: >
+          Binary or non-JSON data may use appropriate media types
+          (application/pdf, image/png) with proper Content-Type headers.
+        applies_to: [data-formats]
+
+      - id: 172
+        title: Use standard media types
+        keyword: SHOULD
+        summary: >
+          Use IANA-registered media types; avoid custom media types
+          unless content negotiation requires them.
+        applies_to: [data-formats]
+
+      - id: 120
+        title: Pluralize array names
+        keyword: SHOULD
+        summary: >
+          JSON property names for arrays should be pluralized to signal
+          cardinality (e.g., "items" not "item").
+        applies_to: [json, naming]
+
+      - id: 118
+        title: Property names must be snake_case (and never camelCase)
+        keyword: MUST
+        summary: >
+          All JSON property names must use snake_case
+          (e.g., order_status not orderStatus).
+        applies_to: [json, naming]
+
+      - id: 240
+        title: Declare enum values using UPPER_SNAKE_CASE string
+        keyword: SHOULD
+        summary: >
+          Enum values should use UPPER_SNAKE_CASE format
+          (e.g., ORDER_PLACED, PAYMENT_PENDING).
+        applies_to: [json, naming]
+
+      - id: 235
+        title: Use naming convention for date/time properties
+        keyword: SHOULD
+        summary: >
+          Date/time property names should use suffixes: _at for
+          timestamps, _date for dates (e.g., created_at, due_date).
+        applies_to: [json, naming]
+
+      - id: 216
+        title: Define maps using additionalProperties
+        keyword: SHOULD
+        summary: >
+          Dictionary/map types should be defined using
+          additionalProperties with a value schema rather than
+          pattern properties.
+        applies_to: [json]
+
+      - id: 123
+        title: Use same semantics for null and absent properties
+        keyword: MUST
+        summary: >
+          Treat null values and absent (missing) properties identically;
+          APIs must not assign different meaning to null vs. omitted.
+        applies_to: [json]
+
+      - id: 122
+        title: Not use null for boolean properties
+        keyword: MUST
+        summary: >
+          Boolean properties must not be nullable; use a tri-state enum
+          (YES/NO/UNKNOWN) if a third state is needed.
+        applies_to: [json]
+
+      - id: 124
+        title: Not use null for empty arrays
+        keyword: SHOULD
+        summary: >
+          Empty collections should be represented as [] not null to
+          simplify client-side handling.
+        applies_to: [json]
+
+      - id: 174
+        title: Use common field names and semantics
+        keyword: MUST
+        summary: >
+          Standard field names (id, created_at, modified_at, type, etc.)
+          must follow the prescribed naming and semantics.
+        applies_to: [json, naming]
+
+      - id: 249
+        title: Use the common address fields
+        keyword: MUST
+        summary: >
+          Address representations must use the standardized address
+          schema fields (street_address, city, country_code, etc.).
+        applies_to: [json, common-objects]
+
+      - id: 173
+        title: Use the common money object
+        keyword: MUST
+        summary: >
+          Monetary values must use the standard Money object with amount
+          (decimal) and currency (ISO 4217) properties.
+        applies_to: [json, common-objects]
+
+  # ============================================================
+  # Chapter 10: REST Basics — HTTP Requests
+  # ============================================================
+  - chapter: REST Basics — HTTP Requests
+    chapter_number: 10
+    rules:
+      - id: 148
+        title: Use HTTP methods correctly
+        keyword: MUST
+        summary: >
+          HTTP methods must be used according to their defined semantics:
+          GET (read), POST (create/action), PUT (full replace), PATCH
+          (partial update), DELETE (remove).
+        applies_to: [http-methods]
+
+      - id: 149
+        title: Fulfill common method properties
+        keyword: MUST
+        summary: >
+          Methods must honor safe (GET, HEAD), idempotent (GET, PUT,
+          DELETE, HEAD, OPTIONS), and cacheable (GET, HEAD) properties.
+        applies_to: [http-methods]
+
+      - id: 229
+        title: Consider to design POST and PATCH idempotent
+        keyword: SHOULD
+        summary: >
+          Design POST and PATCH operations to be idempotent where
+          possible using idempotency keys or natural keys.
+        applies_to: [http-methods, design]
+
+      - id: 231
+        title: Use secondary key for idempotent POST design
+        keyword: SHOULD
+        summary: >
+          Use a client-provided secondary key (business key or
+          Idempotency-Key header) to achieve POST idempotency.
+        applies_to: [http-methods]
+
+      - id: 253
+        title: Support asynchronous request processing
+        keyword: MAY
+        summary: >
+          Long-running operations may use 202 Accepted with a status
+          resource for polling or callback for async processing.
+        applies_to: [http-methods, design]
+
+      - id: 154
+        title: Define collection format of header and query parameters
+        keyword: MUST
+        summary: >
+          Multi-value parameters must define their collection format
+          (csv, multi, pipes, ssv) explicitly in the specification.
+        applies_to: [http-methods]
+
+      - id: 236
+        title: Design simple query languages using query parameters
+        keyword: SHOULD
+        summary: >
+          Simple filtering should use dedicated query parameters per
+          filterable property (e.g., ?status=open&sort=created_at).
+        applies_to: [urls, design]
+
+      - id: 237
+        title: Design complex query languages using JSON
+        keyword: SHOULD
+        summary: >
+          Complex queries with nested logic should use a JSON-based
+          query body via POST to a search sub-resource.
+        applies_to: [design]
+
+      - id: 226
+        title: Document implicit response filtering
+        keyword: MUST
+        summary: >
+          If responses are implicitly filtered (e.g., by tenant, by
+          permissions), this must be documented in the API specification.
+        applies_to: [documentation]
+
+  # ============================================================
+  # Chapter 11: REST Basics — HTTP Status Codes
+  # ============================================================
+  - chapter: REST Basics — HTTP Status Codes
+    chapter_number: 11
+    rules:
+      - id: 243
+        title: Use official HTTP status codes
+        keyword: MUST
+        summary: >
+          Only use status codes registered in the IANA HTTP Status Code
+          Registry; never invent custom codes.
+        applies_to: [http-status]
+
+      - id: 151
+        title: Specify success and error responses
+        keyword: MUST
+        summary: >
+          Every endpoint must specify all relevant success (2xx) and
+          error (4xx, 5xx) response codes in the specification.
+        applies_to: [http-status, specification]
+
+      - id: 150
+        title: Only use most common HTTP status codes
+        keyword: SHOULD
+        summary: >
+          Limit usage to well-known status codes: 200, 201, 202, 204,
+          301, 303, 304, 400, 401, 403, 404, 405, 406, 408, 409, 410,
+          412, 415, 422, 429, 500, 501, 503.
+        applies_to: [http-status]
+
+      - id: 220
+        title: Use most specific HTTP status codes
+        keyword: MUST
+        summary: >
+          Return the most specific applicable status code (e.g., 404 for
+          not found, not just 400 for all client errors).
+        applies_to: [http-status]
+
+      - id: 152
+        title: Use code 207 for batch or bulk requests
+        keyword: MUST
+        summary: >
+          Batch operations with per-item status must use 207
+          Multi-Status with individual status codes per item.
+        applies_to: [http-status]
+
+      - id: 153
+        title: Use code 429 with headers for rate limits
+        keyword: MUST
+        summary: >
+          Rate-limited responses must use 429 Too Many Requests with
+          Retry-After and rate limit headers.
+        applies_to: [http-status]
+
+      - id: 176
+        title: Support problem JSON
+        keyword: MUST
+        summary: >
+          Error responses must use RFC 9457 Problem Details format
+          (application/problem+json) with type, title, status, detail.
+        applies_to: [http-status, json]
+
+      - id: 177
+        title: Not expose stack traces
+        keyword: MUST
+        summary: >
+          Error responses must never contain stack traces or internal
+          implementation details in production.
+        applies_to: [http-status, security]
+
+      - id: 251
+        title: Not use redirection codes
+        keyword: SHOULD
+        summary: >
+          APIs should avoid HTTP redirection (3xx) status codes; return
+          the data directly or use explicit resource links.
+        applies_to: [http-status]
+
+  # ============================================================
+  # Chapter 12: REST Basics — HTTP Headers
+  # ============================================================
+  - chapter: REST Basics — HTTP Headers
+    chapter_number: 12
+    rules:
+      - id: 133
+        title: Use standard headers
+        keyword: MAY
+        summary: >
+          Use IANA-registered standard HTTP headers; prefer standard
+          headers over custom ones for common functionality.
+        applies_to: [http-headers]
+
+      - id: 132
+        title: Use kebab-case with uppercase separate words for HTTP headers
+        keyword: SHOULD
+        summary: >
+          Custom headers should use Kebab-Upper-Case format
+          (e.g., X-Flow-Id, not x_flow_id).
+        applies_to: [http-headers, naming]
+
+      - id: 178
+        title: Use Content-* headers correctly
+        keyword: MUST
+        summary: >
+          Content-Type, Content-Encoding, Content-Language, and
+          Content-Length must be set accurately on all responses.
+        applies_to: [http-headers]
+
+      - id: 180
+        title: Use Location header instead of Content-Location header
+        keyword: SHOULD
+        summary: >
+          Use Location header for created resources (201) and async
+          status endpoints (202), not Content-Location.
+        applies_to: [http-headers]
+
+      - id: 179
+        title: Use Content-Location header
+        keyword: MAY
+        summary: >
+          Content-Location may be used to indicate the direct URL of
+          the returned resource representation.
+        applies_to: [http-headers]
+
+      - id: 181
+        title: Consider to support Prefer header for processing preferences
+        keyword: MAY
+        summary: >
+          Support RFC 7240 Prefer header for client preferences like
+          respond-async, return=minimal, return=representation.
+        applies_to: [http-headers]
+
+      - id: 182
+        title: Consider to support ETag with If-Match/If-None-Match header
+        keyword: MAY
+        summary: >
+          Support ETags for optimistic concurrency control and cache
+          validation using If-Match and If-None-Match headers.
+        applies_to: [http-headers]
+
+      - id: 230
+        title: Consider to support Idempotency-Key header
+        keyword: MAY
+        summary: >
+          Support Idempotency-Key header for non-idempotent POST
+          requests to enable safe retries.
+        applies_to: [http-headers]
+
+      - id: 183
+        title: Use only the specified proprietary Zalando headers
+        keyword: SHOULD
+        summary: >
+          Only use the approved set of proprietary headers defined by
+          Zalando's header registry.
+        applies_to: [http-headers]
+        zalando_internal: true
+        exclusion_rationale: >
+          References Zalando-specific proprietary headers (X-Flow-ID,
+          X-Tenant-ID, etc.) and internal header registry.
+
+      - id: 184
+        title: Propagate proprietary headers
+        keyword: MUST
+        summary: >
+          Zalando proprietary headers must be propagated through the
+          entire service call chain for tracing and context.
+        applies_to: [http-headers]
+        zalando_internal: true
+        exclusion_rationale: >
+          Requires propagation of Zalando-specific proprietary headers
+          through internal service mesh infrastructure.
+
+      - id: 233
+        title: Support X-Flow-ID
+        keyword: MUST
+        summary: >
+          Services must support X-Flow-ID header for distributed
+          request tracing across the Zalando platform.
+        applies_to: [http-headers]
+        zalando_internal: true
+        exclusion_rationale: >
+          X-Flow-ID is Zalando's proprietary correlation ID header.
+          External adopters should use W3C Trace Context or their own
+          correlation ID standard instead.
+
+  # ============================================================
+  # Chapter 13: REST Design — Hypermedia
+  # ============================================================
+  - chapter: REST Design — Hypermedia
+    chapter_number: 13
+    rules:
+      - id: 162
+        title: Use REST maturity level 2
+        keyword: MUST
+        summary: >
+          APIs must reach Richardson Maturity Level 2 — proper use of
+          HTTP methods and status codes with resource-based URLs.
+        applies_to: [design]
+
+      - id: 163
+        title: Use REST maturity level 3 — HATEOAS
+        keyword: MAY
+        summary: >
+          APIs may implement HATEOAS (Level 3) with hypermedia controls
+          for discoverability, especially for workflow-driven APIs.
+        applies_to: [design, hypermedia]
+
+      - id: 164
+        title: Use common hypertext controls
+        keyword: MUST
+        summary: >
+          When using hypermedia, link objects must follow a common format
+          with href, type, and rel properties.
+        applies_to: [hypermedia]
+
+      - id: 165
+        title: Use simple hypertext controls for pagination and self-references
+        keyword: SHOULD
+        summary: >
+          Pagination and self links should use simple link objects
+          (self, first, prev, next, last).
+        applies_to: [hypermedia, pagination]
+
+      - id: 217
+        title: Use full, absolute URI for resource identification
+        keyword: MUST
+        summary: >
+          All resource URIs in responses (links, self references) must
+          be fully qualified absolute URIs.
+        applies_to: [hypermedia]
+
+      - id: 166
+        title: Not use link headers with JSON entities
+        keyword: MUST
+        summary: >
+          Embed links in JSON response bodies, not in HTTP Link headers,
+          when the response is a JSON entity.
+        applies_to: [hypermedia, http-headers]
+
+  # ============================================================
+  # Chapter 14: REST Design — Performance
+  # ============================================================
+  - chapter: REST Design — Performance
+    chapter_number: 14
+    rules:
+      - id: 155
+        title: Reduce bandwidth needs and improve responsiveness
+        keyword: SHOULD
+        summary: >
+          APIs should support mechanisms to reduce payload size and
+          response time (filtering, compression, partial responses).
+        applies_to: [performance]
+
+      - id: 156
+        title: Use gzip compression
+        keyword: SHOULD
+        summary: >
+          APIs should support gzip content encoding for response
+          compression via Accept-Encoding header.
+        applies_to: [performance]
+
+      - id: 157
+        title: Support partial responses via filtering
+        keyword: SHOULD
+        summary: >
+          Support a fields query parameter to let clients request only
+          needed properties, reducing payload size.
+        applies_to: [performance]
+
+      - id: 158
+        title: Allow optional embedding of sub-resources
+        keyword: SHOULD
+        summary: >
+          Support an embed/expand query parameter to inline related
+          resources, reducing the number of requests.
+        applies_to: [performance]
+
+      - id: 227
+        title: Document cacheable GET, HEAD, and POST endpoints
+        keyword: MUST
+        summary: >
+          Cacheable endpoints must document caching behavior including
+          Cache-Control headers and TTL expectations.
+        applies_to: [performance, documentation]
+
+  # ============================================================
+  # Chapter 15: REST Design — Pagination
+  # ============================================================
+  - chapter: REST Design — Pagination
+    chapter_number: 15
+    rules:
+      - id: 159
+        title: Support pagination
+        keyword: MUST
+        summary: >
+          Collection endpoints must support pagination to handle large
+          result sets efficiently.
+        applies_to: [pagination]
+
+      - id: 160
+        title: Prefer cursor-based pagination, avoid offset-based pagination
+        keyword: SHOULD
+        summary: >
+          Use cursor-based pagination for consistency and performance;
+          offset-based pagination has issues with moving windows.
+        applies_to: [pagination]
+
+      - id: 248
+        title: Use pagination response page object
+        keyword: SHOULD
+        summary: >
+          Paginated responses should include a page object with cursors
+          and pagination metadata.
+        applies_to: [pagination]
+
+      - id: 161
+        title: Use pagination links
+        keyword: SHOULD
+        summary: >
+          Include self, next, prev, first, last navigation links in
+          paginated responses.
+        applies_to: [pagination, hypermedia]
+
+      - id: 254
+        title: Avoid a total result count
+        keyword: SHOULD
+        summary: >
+          Avoid returning total_count in paginated responses as it
+          requires expensive COUNT queries; use has_more instead.
+        applies_to: [pagination]
+
+  # ============================================================
+  # Chapter 16: REST Design — Compatibility
+  # ============================================================
+  - chapter: REST Design — Compatibility
+    chapter_number: 16
+    rules:
+      - id: 106
+        title: Not break backward compatibility
+        keyword: MUST
+        summary: >
+          API changes must not break existing clients; all changes must
+          be backward compatible unless a new major version is released.
+        applies_to: [compatibility]
+
+      - id: 107
+        title: Prefer compatible extensions
+        keyword: SHOULD
+        summary: >
+          Extend APIs by adding optional fields, new endpoints, or new
+          enum values rather than modifying existing contracts.
+        applies_to: [compatibility]
+
+      - id: 109
+        title: Design APIs conservatively
+        keyword: SHOULD
+        summary: >
+          Be conservative in what you send and liberal in what you
+          accept (Postel's Law applied to API design).
+        applies_to: [compatibility]
+
+      - id: 108
+        title: Prepare clients to accept compatible API extensions
+        keyword: MUST
+        summary: >
+          Clients must ignore unknown fields and handle new enum values
+          gracefully (tolerant reader pattern).
+        applies_to: [compatibility]
+
+      - id: 111
+        title: Treat OpenAPI specification as open for extension by default
+        keyword: MUST
+        summary: >
+          Unless explicitly restricted, schemas are open for extension —
+          additional properties are allowed by default.
+        applies_to: [compatibility, specification]
+
+      - id: 113
+        title: Avoid versioning
+        keyword: SHOULD
+        summary: >
+          Prefer evolving APIs compatibly over introducing new versions;
+          versioning is a last resort.
+        applies_to: [versioning]
+
+      - id: 114
+        title: Use media type versioning
+        keyword: MUST
+        summary: >
+          When versioning is necessary, use media type versioning via
+          Content-Type header (e.g., application/vnd.api+json;v=2).
+        applies_to: [versioning]
+
+      - id: 115
+        title: Not use URL versioning
+        keyword: MUST
+        summary: >
+          Do not embed version numbers in URLs (e.g., /v1/orders);
+          use media type versioning instead.
+        applies_to: [versioning]
+
+      - id: 110
+        title: Always return JSON objects as top-level data structures
+        keyword: MUST
+        summary: >
+          Top-level response must be a JSON object (not array or
+          primitive) to allow backward-compatible extension.
+        applies_to: [compatibility, json]
+
+      - id: 112
+        title: Use open-ended list of values via examples for enumeration types
+        keyword: SHOULD
+        summary: >
+          Use x-extensible-enum instead of enum for values that may grow
+          over time, allowing compatible extension.
+        applies_to: [compatibility, json]
+
+  # ============================================================
+  # Chapter 17: REST Design — Deprecation
+  # ============================================================
+  - chapter: REST Design — Deprecation
+    chapter_number: 17
+    rules:
+      - id: 187
+        title: Reflect deprecation in API specifications
+        keyword: MUST
+        summary: >
+          Deprecated endpoints, parameters, and schemas must be marked
+          with deprecated: true in the OpenAPI specification.
+        applies_to: [deprecation, specification]
+
+      - id: 185
+        title: Obtain approval of clients before API shut down
+        keyword: MUST
+        summary: >
+          APIs must not be shut down without obtaining explicit approval
+          from all active consumers.
+        applies_to: [deprecation]
+
+      - id: 186
+        title: Collect external partner consent on deprecation time span
+        keyword: MUST
+        summary: >
+          External partners must agree to the deprecation timeline
+          before proceeding with API sunset.
+        applies_to: [deprecation]
+
+      - id: 188
+        title: Monitor usage of deprecated API scheduled for sunset
+        keyword: MUST
+        summary: >
+          Deprecated APIs must be monitored for ongoing usage to ensure
+          all clients have migrated before sunset.
+        applies_to: [deprecation]
+
+      - id: 189
+        title: Add Deprecation and Sunset header to responses
+        keyword: SHOULD
+        summary: >
+          Responses from deprecated endpoints should include
+          Deprecation (RFC 8594) and Sunset headers with dates.
+        applies_to: [deprecation, http-headers]
+
+      - id: 190
+        title: Add monitoring for Deprecation and Sunset header
+        keyword: SHOULD
+        summary: >
+          Clients should monitor incoming Deprecation and Sunset headers
+          to proactively plan migrations.
+        applies_to: [deprecation]
+
+      - id: 191
+        title: Not start using deprecated APIs
+        keyword: MUST
+        summary: >
+          New integrations must not be built against deprecated API
+          endpoints or features.
+        applies_to: [deprecation]
+
+  # ============================================================
+  # Chapter 18: REST Operation
+  # ============================================================
+  - chapter: REST Operation
+    chapter_number: 18
+    rules:
+      - id: 192
+        title: Publish OpenAPI specification for APIs
+        keyword: MUST
+        summary: >
+          All production APIs must have their OpenAPI specification
+          published and discoverable.
+        applies_to: [specification]
+
+      - id: 193
+        title: Monitor API usage
+        keyword: SHOULD
+        summary: >
+          API usage should be monitored for performance, errors, and
+          adoption metrics.
+        applies_to: [operations]
+
+  # ============================================================
+  # Chapter 19: EVENT Basics — Event Types
+  # ============================================================
+  - chapter: EVENT Basics — Event Types
+    chapter_number: 19
+    rules:
+      - id: 208
+        title: Define events compliant with overall API guidelines
+        keyword: MUST
+        summary: >
+          Event schemas must follow the same naming, formatting, and
+          compatibility rules as REST API schemas.
+        applies_to: [events]
+
+      - id: 194
+        title: Treat events as part of the service interface
+        keyword: MUST
+        summary: >
+          Published events are a public API contract and must be
+          designed, documented, and evolved with the same rigor.
+        applies_to: [events]
+
+      - id: 195
+        title: Make event schema available for review
+        keyword: MUST
+        summary: >
+          Event type schemas must be published and available for
+          consumer review before deployment.
+        applies_to: [events, specification]
+
+      - id: 197
+        title: Specify and register events as event types
+        keyword: MUST
+        summary: >
+          Every event must be registered as a named event type with a
+          formal schema definition.
+        applies_to: [events]
+
+      - id: 213
+        title: Follow naming convention for event type names
+        keyword: MUST
+        summary: >
+          Event type names must follow a hierarchical dot-separated
+          naming convention reflecting the business domain.
+        applies_to: [events, naming]
+
+      - id: 207
+        title: Indicate ownership of event types
+        keyword: MUST
+        summary: >
+          Each event type must have a clearly designated owning service
+          or team responsible for its schema.
+        applies_to: [events]
+
+      - id: 245
+        title: Carefully define the compatibility mode
+        keyword: MUST
+        summary: >
+          Each event type must declare its compatibility mode (forward,
+          backward, full, none) to guide consumer expectations.
+        applies_to: [events, compatibility]
+
+      - id: 196
+        title: Ensure event schema conforms to OpenAPI schema object
+        keyword: MUST
+        summary: >
+          Event schemas must be valid OpenAPI 3.x Schema Objects to
+          enable tooling and code generation.
+        applies_to: [events, specification]
+
+      - id: 210
+        title: Avoid additionalProperties in event type schemas
+        keyword: SHOULD
+        summary: >
+          Event schemas should avoid additionalProperties: true to
+          maintain strong typing and clear contracts.
+        applies_to: [events]
+
+      - id: 246
+        title: Use semantic versioning of event type schemas
+        keyword: MUST
+        summary: >
+          Event type schemas must be semantically versioned; breaking
+          changes require a new major version.
+        applies_to: [events, versioning]
+
+  # ============================================================
+  # Chapter 20: EVENT Basics — Event Categories
+  # ============================================================
+  - chapter: EVENT Basics — Event Categories
+    chapter_number: 20
+    rules:
+      - id: 198
+        title: Ensure that events conform to an event category
+        keyword: MUST
+        summary: >
+          Each event must conform to one of the defined categories:
+          general event, data change event, or business event.
+        applies_to: [events]
+
+      - id: 247
+        title: Provide mandatory event metadata
+        keyword: MUST
+        summary: >
+          Events must include metadata fields: event type, occurred_at,
+          received_at, and unique event identifier.
+        applies_to: [events]
+
+      - id: 211
+        title: Provide unique event identifiers
+        keyword: MUST
+        summary: >
+          Each event instance must carry a globally unique identifier
+          (UUID) for deduplication and tracing.
+        applies_to: [events]
+
+      - id: 201
+        title: Use general events to signal steps in business processes
+        keyword: MUST
+        summary: >
+          General events signal meaningful state transitions in business
+          processes (e.g., order.placed, payment.completed).
+        applies_to: [events]
+
+      - id: 203
+        title: Provide explicit event ordering for general events
+        keyword: SHOULD
+        summary: >
+          General events should include ordering metadata (sequence
+          number or vector clock) for ordered processing.
+        applies_to: [events]
+
+      - id: 202
+        title: Use data change events to signal mutations
+        keyword: MUST
+        summary: >
+          Data change events signal CRUD mutations on resources and must
+          include the operation type (created, updated, deleted).
+        applies_to: [events]
+
+      - id: 242
+        title: Provide explicit event ordering for data change events
+        keyword: MUST
+        summary: >
+          Data change events must include ordering metadata to ensure
+          consumers can reconstruct correct state.
+        applies_to: [events]
+
+      - id: 204
+        title: Use the hash partition strategy for data change events
+        keyword: SHOULD
+        summary: >
+          Data change events should be partitioned by entity ID hash
+          to ensure ordered delivery per entity.
+        applies_to: [events]
+
+  # ============================================================
+  # Chapter 21: EVENT Design
+  # ============================================================
+  - chapter: EVENT Design
+    chapter_number: 21
+    rules:
+      - id: 200
+        title: Avoid writing sensitive data to events
+        keyword: SHOULD
+        summary: >
+          Events should not contain PII or sensitive data; reference
+          the resource by ID and let consumers fetch details as needed.
+        applies_to: [events, security]
+
+      - id: 214
+        title: Be robust against duplicates when consuming events
+        keyword: MUST
+        summary: >
+          Event consumers must handle duplicate events idempotently;
+          at-least-once delivery is the assumed guarantee.
+        applies_to: [events]
+
+      - id: 212
+        title: Design for idempotent out-of-order processing
+        keyword: SHOULD
+        summary: >
+          Event consumers should handle out-of-order delivery gracefully
+          using timestamps or sequence numbers.
+        applies_to: [events]
+
+      - id: 199
+        title: Ensure that events define useful business resources
+        keyword: MUST
+        summary: >
+          Events must reference meaningful business resources, not
+          arbitrary technical entities.
+        applies_to: [events]
+
+      - id: 205
+        title: Ensure that data change events match the APIs resources
+        keyword: SHOULD
+        summary: >
+          Data change event schemas should align with the corresponding
+          REST resource schemas for consistency.
+        applies_to: [events]
+
+      - id: 209
+        title: Maintain backwards compatibility for events
+        keyword: MUST
+        summary: >
+          Event schema changes must be backward compatible; breaking
+          changes require a new event type version.
+        applies_to: [events, compatibility]

@@ -1,0 +1,175 @@
+# Spectral Ruleset for Zalando RESTful API Guidelines
+# Derived from Zalando RESTful API Guidelines
+# Source: https://opensource.zalando.com/restful-api-guidelines/
+# Copyright Zalando SE, licensed under CC-BY-4.0
+# This is a derivative work — see LICENSE for details.
+
+extends:
+  - - "spectral:oas"
+    - all
+
+rules:
+
+  # ── Meta / Info Rules ──────────────────────────────────────────────
+
+  # [#218] Must contain API meta information — contact required
+  info-must-have-contact:
+    description: "Info object must have contact [#218]"
+    severity: error
+    given: "$.info"
+    then:
+      field: contact
+      function: truthy
+
+  # [#215] Must have x-api-id extension
+  info-must-have-x-api-id:
+    description: "Info object must contain x-api-id extension [#215]"
+    severity: error
+    given: "$.info"
+    then:
+      field: x-api-id
+      function: truthy
+
+  # [#219] Must have x-audience extension
+  info-must-have-x-audience:
+    description: "Info object must contain x-audience extension [#219]"
+    severity: error
+    given: "$.info"
+    then:
+      field: x-audience
+      function: truthy
+
+  # ── Path Naming Rules ──────────────────────────────────────────────
+
+  # [#129] Path segments must be kebab-case
+  paths-kebab-case:
+    description: "Path segments must be lowercase kebab-case [#129]"
+    severity: error
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^(\\/[a-z][a-z0-9]*(-[a-z0-9]+)*(\\/{[^}]+})?)+$"
+
+  # [#134] Resource names in paths should be plural
+  plural-resource-names:
+    description: "Resource path segments should use plural nouns [#134]"
+    severity: warn
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "\\/(account|order|product|customer|invoice|payment|address|item|event|subscription|category|message|notification|user|role|permission|session|token|file|document|comment|review|rating|tag|label|setting|preference|log|report|metric|alert|task|job|schedule|rule|policy|group|team|organization|company|location|region|country|warehouse|shipment|delivery|refund|discount|coupon|cart|wishlist|booking|reservation|appointment|contract|agreement|license|certificate|badge|achievement|ticket|issue|request|response|record|entry|note|attachment|resource|asset|image|video|template|layout|theme|plugin|extension|module|component|service|endpoint|connection|integration|webhook|callback|channel|stream|queue|topic|pipeline|workflow|trigger|action|filter|search|query|index|cache|backup|snapshot|version|release|deployment|environment|cluster|node|instance|container|volume|network|gateway|proxy|router|middleware|handler|controller|model|schema|migration|seed|fixture|factory|helper|utility|library|package|dependency|config|option|parameter|variable|constant|secret|credential)(\\/|$)"
+
+  # [#135] Paths should not start with /api
+  no-api-prefix:
+    description: "Paths should not start with /api prefix [#135]"
+    severity: warn
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "^\\/api"
+
+  # [#136] Paths must not have trailing slash
+  no-trailing-slash:
+    description: "Paths must not end with a trailing slash [#136]"
+    severity: error
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "\\/$"
+
+  # [#141] Path segments should not contain common HTTP verbs
+  paths-no-verbs:
+    description: "Path segments should not contain HTTP method verbs [#141]"
+    severity: warn
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "\\/(get|put|post|patch|delete|create|update|remove|list|fetch|retrieve|search|find|add|edit|modify|set|upload|download)(-|/|$)"
+
+  # [#115] Paths should not contain URL versioning
+  no-url-versioning:
+    description: "Paths should not contain URL version prefix like /v1 [#115]"
+    severity: warn
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "\\/v[0-9]+"
+
+  # ── Property & Parameter Naming Rules ──────────────────────────────
+
+  # [#118] Schema property names must be snake_case
+  properties-snake-case:
+    description: "Schema property names must be snake_case [#118]"
+    severity: error
+    given: "$..[?(@.type == 'object')].properties"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+
+  # [#130] Query parameter names must be snake_case
+  query-params-snake-case:
+    description: "Query parameter names must be snake_case [#130]"
+    severity: error
+    given: "$.paths.*.*.parameters[?(@.in == 'query')]"
+    then:
+      field: name
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+
+  # ── Data Type Rules ────────────────────────────────────────────────
+
+  # [#171] Number and integer schemas must define format
+  number-format-required:
+    description: "Number/integer schemas must specify a format (e.g. int32, int64, float, double, decimal) [#171]"
+    severity: error
+    given: "$..properties.*[?(@.type == 'number' || @.type == 'integer')]"
+    then:
+      field: format
+      function: truthy
+
+  # [#240] Enum values should be UPPER_SNAKE_CASE
+  enum-upper-snake-case:
+    description: "Enum values should use UPPER_SNAKE_CASE [#240]"
+    severity: warn
+    given: "$..enum.*"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"
+
+  # ── Security Rules ─────────────────────────────────────────────────
+
+  # [#104] Operations must define security
+  must-have-security:
+    description: "Operations must define security scheme [#104]"
+    severity: error
+    given: "$.paths.*[get,put,post,patch,delete]"
+    then:
+      field: security
+      function: truthy
+
+  # ── Error Handling Rules ───────────────────────────────────────────
+
+  # [#176] Error responses (4xx/5xx) should use application/problem+json
+  error-response-problem-json:
+    description: "Error responses (4xx/5xx) should use application/problem+json media type [#176]"
+    severity: warn
+    given: "$.paths.*.*.responses[?(@property.match(/^[45]/))]..content"
+    then:
+      field: "application/problem+json"
+      function: truthy
